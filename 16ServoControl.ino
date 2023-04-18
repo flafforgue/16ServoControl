@@ -48,9 +48,11 @@ Adafruit_SSD1306 OLed(OLedWidth, OLedHight, &Wire, OLedReset);
 //  Lectures Valeurs 74HC4067
 // -------------------------------------------------------------
 
-int Values[16];
+int  Values[16];
+int  OValues[16];
+byte LastChanelchanged = 0;
 
-//                          v v v    v v v    v v v      v v  
+//  Reverse Mounted       v v v    v v v    v v v      v v  
 //const byte ch0[16]  = { 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0 };
 //const byte ch1[16]  = { 1,1,0,0, 1,1,0,0, 1,1,0,0, 1,1,0,0 };
 //const byte ch2[16]  = { 0,0,0,0, 1,1,1,1, 0,0,0,0, 1,1,1,1 };
@@ -73,6 +75,11 @@ int ReadChannel(int chn){            // Read One Channel
 
 void ReadChannels(){                // Read all Channels
   for(int i=0;i<16;i++) {
+    int temp=ReadChannel(i);
+    if ( abs( OValues[i] - temp ) > 5) {
+       OValues[i]=Values[i];
+       LastChanelchanged=i;
+    }
     Values[i]= ReadChannel(i);
   }
 }
@@ -88,7 +95,7 @@ int MinUs[16];
 int MaxUs[16];
 
 void SetServo(int num, int pos) {
-  int microsec = map(pos, 0, 1023, MinUs[num],  MaxUs[num]);
+  int microsec = map(pos, 0, 1023, MinUs[num],  MaxUs[num]); 
   pwm.writeMicroseconds(num, microsec); 
 }
 
@@ -112,6 +119,12 @@ void doEncoder() {
   }
 }
 
+void ClearEncoder() {
+  cli();
+  encodermov=0;
+  sei(); 
+}
+
 // -------------------------------------------------------------
 // Boutons 
 // -------------------------------------------------------------
@@ -126,7 +139,7 @@ void doEncoder() {
 #define BTN_SELECT        7
 #define BTN_SELECT_Long   8
 
-#define BTN_LONGDELAY   800
+#define BTN_LONGDELAY  1000
 
 byte keydown  = BTN_NONE;
 byte key      = BTN_NONE;
@@ -146,26 +159,30 @@ void ReadBtnState() {
         switch (keydown) {
            case BTN_ENC:
                  if ( digitalRead (BTNEncoder)==HIGH ) { // keypress on release ;)   
-                   key     = BTN_ENC;
-                   keydown = BTN_NONE;
+                   if ( NTime - BTNTime >= BTN_LONGDELAY )  key = BTN_ENC_Long;                
+                   else                                     key = BTN_ENC;
+                   keydown=BTN_NONE;
                  }
                  break;
            case BTN_RIGHT:
                  if ( digitalRead (BTNRight)==HIGH ) { // keypress on release ;)   
-                   key     = BTN_RIGHT;
-                   keydown = BTN_NONE;
+                   if ( NTime - BTNTime >= BTN_LONGDELAY )  key = BTN_RIGHT_Long;                
+                   else                                     key = BTN_RIGHT;
+                   keydown=BTN_NONE;
                  } 
                  break;           
            case BTN_LEFT:
                  if ( digitalRead (BTNLeft)==HIGH ) { // keypress on release ;)   
-                   key     = BTN_LEFT;
-                   keydown = BTN_NONE;
+                   if ( NTime - BTNTime >= BTN_LONGDELAY )  key = BTN_LEFT_Long;                
+                   else                                     key = BTN_LEFT;
+                   keydown=BTN_NONE;
                  } 
                  break;
            case BTN_SELECT:
                  if ( digitalRead (BTNSel)==HIGH ) { // keypress on release ;)   
-                   key     = BTN_SELECT;
-                   keydown = BTN_NONE;
+                   if ( NTime - BTNTime >= BTN_LONGDELAY )  key = BTN_SELECT_Long;                
+                   else                                     key = BTN_SELECT;
+                   keydown=BTN_NONE;
                  } 
                  break;          
        }       
@@ -187,11 +204,11 @@ byte readkey() {
 // Sauvegarde et restauration eeprom
 // -------------------------------------------------------------
 
-const int ProgStamp = 3219;
+const int ProgStamp = 3218;
 
 #define Adr_Stamp  0
 #define Adr_MinUs  2
-#define Adr_MaxUs 18
+#define Adr_MaxUs 34
 
 void InitVars() {
   for ( int i=0; i<16 ; i++ ) {
@@ -203,36 +220,72 @@ void InitVars() {
 void SaveToEprom() {
   EEPROM.put(Adr_Stamp, ProgStamp);
   EEPROM.put(Adr_MinUs, MinUs);
-  EEPROM.put(Adr_MaxUs, MaxUs);   
+  EEPROM.put(Adr_MaxUs, MaxUs); 
+  Serial.println(F("Save eeprom"));
 }
 
 void InitFromEprom () {
   int temp;
   EEPROM.get(Adr_Stamp, temp);
   if ( temp == ProgStamp ) {  // Stamp found , we can assume eerom contain Valid Datas 
+    Serial.println(F("Stamp Found"));
+    Serial.println(F("Read eeprom"));
     EEPROM.get(Adr_MinUs, MinUs);
     EEPROM.get(Adr_MaxUs, MaxUs);
+
+    Serial.print("UsMin : ");
+    for (byte i=0;i<16;i++ ) {
+      Serial.print(MinUs[i]);    
+      Serial.print(",");  
+    }
+    Serial.println("");
+
+    Serial.print("UsMax : ");
+    for (byte i=0;i<16;i++ ) {
+      Serial.print(MaxUs[i]);    
+      Serial.print(",");  
+    }
+    Serial.println("");
+  
   } else {                    // Stamp not found , Values need to be initialized
+    Serial.println(F("Stamp Not Found"));
     InitVars();
     SaveToEprom(); 
   }
 }
 
 // -------------------------------------------------------------
-//  Mode Live
+// 
 // -------------------------------------------------------------
 
-void DoLive() {
-  Serial.println(F("Enter Live Mode"));
+void TextMenu(String str) {
+  Serial.println(str);
   OLed.clearDisplay();
   OLed.setTextSize(2);
   OLed.setTextColor(SSD1306_WHITE);
-  OLed.setCursor(0, 10);
-  OLed.println(F("Live Mode"));
-  OLed.display();
-  
+  OLed.setCursor(5, 10);
+  OLed.println(str); 
+}
+
+// -------------------------------------------------------------
+//  Mode Live
+// -------------------------------------------------------------
+
+
+void DoLive() {
+//  Serial.println(F("Enter Live Mode"));
+//  OLed.clearDisplay();
+//  OLed.setTextSize(2);
+//  OLed.setTextColor(SSD1306_WHITE);
+//  OLed.setCursor(0, 10);
+//  OLed.println(F("Live Mode"));
+//  OLed.display();
+    TextMenu(F("Live Mode"));
+    OLed.display();
+    
   boolean LetRunning = true;
   unsigned long omillis = 0;
+  unsigned long amillis = 0;  
   
   while ( LetRunning ) {
     ReadChannels();
@@ -242,25 +295,121 @@ void DoLive() {
       LetRunning=false;
     }
 
-    if ( millis() - omillis > 1000 ) {
-      omillis=millis();
-      Serial.print("Value : ");
-      for(int i = 0; i < 16; i ++){
-        Serial.print(Values[i]); 
-        Serial.print(" , ");
-      }
-      Serial.println(); 
+//    if ( millis() - omillis > 1000 ) { // send datas to serial
+//      omillis=millis();
+//      Serial.print("Value : ");
+//      for(int i = 0; i < 16; i ++){
+//        Serial.print(Values[i]); 
+//        Serial.print(" , ");
+//      }
+//      Serial.println(); 
+//    }
+
+    if ( millis() - amillis > 150 ) {  // Display pot changed
+      TextMenu(F("Live Mode"));
+      int microsec = map(Values[LastChanelchanged], 0, 1023, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
+      OLed.setCursor(4 ,50);  OLed.print(LastChanelchanged);
+      OLed.setCursor(68,50);  OLed.print(microsec);
+      OLed.display();
     }
+    
   }
 
-  cli();
-  encodermov=0;
-  sei();
+  ClearEncoder();
   Serial.println(F("Leave Live Mode"));
 }
 
 // -------------------------------------------------------------
-//
+//          P L A Y  &  R E C C O R D    S E Q U E N C E 
+// -------------------------------------------------------------
+
+void DoRecord() {
+  TextMenu(F("Reccord"));
+  OLed.display();
+  boolean LetRunning = true;
+  while ( LetRunning ) {
+    ReadBtnState();
+    if ( readkey() == BTN_SELECT ) { // if Select Pressed exit
+      LetRunning=false;
+    }
+          
+  }  
+  ClearEncoder();
+}
+
+// -------------------------------------------------------------
+
+void DoPlay() {
+  TextMenu(F("Play"));
+  OLed.display();
+  boolean LetRunning = true;
+  while ( LetRunning ) {
+    ReadBtnState();
+    if ( readkey() == BTN_SELECT ) { // if Select Pressed exit
+      LetRunning=false;
+    }
+          
+  }
+  ClearEncoder();
+}
+
+// -------------------------------------------------------------
+//                  C O N F I G U R A T I O N
+// -------------------------------------------------------------
+
+void DoSetup() {
+  boolean LetRunning = true;
+  int Channel        = 0;
+  int AnaVal;
+  int us;
+  
+  while ( LetRunning ) {
+    ReadBtnState();
+    
+    switch ( readkey() ) {
+      case BTN_RIGHT:       MaxUs[Channel]=us;
+              break;     
+      case BTN_RIGHT_Long:  MaxUs[Channel]=MAX_US;
+              break;
+      case BTN_LEFT:        MinUs[Channel]=us;
+              break;
+      case BTN_LEFT_Long:   MinUs[Channel]=MIN_US;
+              break;
+      case BTN_SELECT:      LetRunning=false;
+              break;
+      case BTN_SELECT_Long: SaveToEprom();
+                            LetRunning=false;
+              break;
+    }
+             
+    if (encodermov != 0 ) {
+      cli();
+      Channel+=encodermov;
+      encodermov=0;
+      sei();
+      if ( Channel > 15 ) { Channel =  0; }
+      if ( Channel <  0 ) { Channel = 15; }
+    }
+    AnaVal=ReadChannel(Channel);
+    us    =map(AnaVal, 0, 1023, MIN_US,MAX_US);
+    
+    OLed.clearDisplay();
+    OLed.setTextColor(SSD1306_WHITE);
+    OLed.setCursor(4,  0);  OLed.print(F("Setup"));
+//    OLed.setCursor(4,  0);  OLed.print(F("L Min"));
+//    OLed.setCursor(4, 16);  OLed.print(F("R Max"));
+    OLed.setCursor(4, 33);  OLed.print(F("C ")); OLed.print(Channel);
+    OLed.setCursor(4, 50);  OLed.print(us);      
+    OLed.setCursor(68,33);  OLed.print(MinUs[Channel]);
+    OLed.setCursor(68,50);  OLed.print(MaxUs[Channel]);
+    OLed.display();
+      
+  }
+  ClearEncoder();
+}
+    
+// -------------------------------------------------------------
+//                 I N I T I A L I Z A T I O N
 // -------------------------------------------------------------
 
 void setup(){
@@ -285,23 +434,24 @@ void setup(){
   pwm.begin();
   pwm.setOscillatorFrequency(OSCFREQUENCY);
   pwm.setPWMFreq(UPDATEFREQUENCY);  
-  InitVars();  
   Serial.println(F("PCA9685 Initialized"));
+  InitFromEprom();  
   
   if(!OLed.begin(SSD1306_SWITCHCAPVCC, OLedAdr)) {
     Serial.println(F("SSD1306 Error"));
   } else {
     Serial.println(F("SSD1306 Initialized"));
   }
-//  OLed.clearDisplay();
   OLed.display();  // display adafruit logo
 
-  attachInterrupt(digitalPinToInterrupt(ROT_A), doEncoder, CHANGE);  
+  attachInterrupt(digitalPinToInterrupt(ROT_A), doEncoder, CHANGE );  
+
   Serial.println(F("Running ..."));
   delay(2000);
 }
 
-
+// -------------------------------------------------------------
+//                     M A I N    L O O P
 // -------------------------------------------------------------
 
 int menu  = 0;
@@ -325,7 +475,6 @@ void loop(){
     OLed.fillRect(0, menu*17, 127, 16, SSD1306_WHITE);
     OLed.setTextColor(SSD1306_INVERSE);
     OLed.setCursor(4,  0);  OLed.println(F("Live Mode"));
-//    OLed.setTextColor(SSD1306_WHITE);
     OLed.setCursor(4, 16);  OLed.println(F("Play"));
     OLed.setCursor(4, 33);  OLed.println(F("Record"));
     OLed.setCursor(4, 50);  OLed.println(F("Setup"));
@@ -333,15 +482,16 @@ void loop(){
     omenu=menu;
   }
   if ( keypressed() ) {
-    if ( readkey() == BTN_ENC ) {
+    byte k = readkey();
+    if ( ( k == BTN_ENC ) || ( k == BTN_SELECT ) ) {
       switch (menu ) {
         case 0: DoLive();
                 break;
-        case 1:  
+        case 1: DoPlay();
+                break;        
+        case 2: DoRecord(); 
                 break;
-        case 2:  
-                break;
-        case 3:  
+        case 3: DoSetup();
                 break;                                       
       }
     }
