@@ -271,7 +271,6 @@ void TextMenu(String str) {
 //  Mode Live
 // -------------------------------------------------------------
 
-
 void DoLive() {
 //  Serial.println(F("Enter Live Mode"));
 //  OLed.clearDisplay();
@@ -312,7 +311,6 @@ void DoLive() {
       OLed.setCursor(68,50);  OLed.print(microsec);
       OLed.display();
     }
-    
   }
 
   ClearEncoder();
