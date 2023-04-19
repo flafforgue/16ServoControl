@@ -1,5 +1,8 @@
 // -------------------------------------------------------------
 //
+//
+// 19/04/2023  Flash :  21844  Mem : 857   Reste : 1191 // 2 lines - ok
+// 20/04/2023  Flash :  21714  Mem : 729   Reste : 1319 // 4 lines - Change sequence from int to byte
 // -------------------------------------------------------------
 
 #define OSCFREQUENCY 28729000
@@ -49,25 +52,18 @@ Adafruit_SSD1306 OLed(OLedWidth, OLedHight, &Wire, OLedReset);
 // -------------------------------------------------------------
 
 int  Values[16];
-int  OValues[16];
 byte LastChanelchanged = 0;
 
-//  Reverse Mounted       v v v    v v v    v v v      v v  
-//const byte ch0[16]  = { 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0 };
-//const byte ch1[16]  = { 1,1,0,0, 1,1,0,0, 1,1,0,0, 1,1,0,0 };
-//const byte ch2[16]  = { 0,0,0,0, 1,1,1,1, 0,0,0,0, 1,1,1,1 };
-//const byte ch3[16]  = { 0,0,0,0, 0,0,0,0, 1,1,1,1, 1,1,1,1 };
-
-const byte ch0[16]  = { 0,0,0,0, 1,1,1,1, 0,0,0,0, 1,1,1,1 };
-const byte ch1[16]  = { 0,0,0,0, 0,0,0,0, 1,1,1,1, 1,1,1,1 };
-const byte ch2[16]  = { 0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,0,1 };
-const byte ch3[16]  = { 0,0,1,1, 0,0,1,1, 0,0,1,1, 0,0,1,1 };
+const byte ch0[16] PROGMEM = { 0,0,0,0, 1,1,1,1, 0,0,0,0, 1,1,1,1 };
+const byte ch1[16] PROGMEM = { 0,0,0,0, 0,0,0,0, 1,1,1,1, 1,1,1,1 };
+const byte ch2[16] PROGMEM = { 0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,0,1 };
+const byte ch3[16] PROGMEM = { 0,0,1,1, 0,0,1,1, 0,0,1,1, 0,0,1,1 };
 
 int ReadChannel(int chn){            // Read One Channel
-  digitalWrite(S0, ch0[chn] );
-  digitalWrite(S1, ch1[chn] );
-  digitalWrite(S2, ch2[chn] );
-  digitalWrite(S3, ch3[chn] );
+  digitalWrite(S0, pgm_read_byte(&ch0[chn]) );
+  digitalWrite(S1, pgm_read_byte(&ch1[chn]) );
+  digitalWrite(S2, pgm_read_byte(&ch2[chn]) );
+  digitalWrite(S3, pgm_read_byte(&ch3[chn]) );
   delay(10);
   int val = analogRead(SIGNAL);
   return val;
@@ -76,8 +72,7 @@ int ReadChannel(int chn){            // Read One Channel
 void ReadChannels(){                // Read all Channels
   for(int i=0;i<16;i++) {
     int temp=ReadChannel(i);
-    if ( abs( OValues[i] - temp ) > 5) {
-       OValues[i]=Values[i];
+    if ( abs( Values[i] - temp ) > 5) {
        LastChanelchanged=i;
     }
     Values[i]= ReadChannel(i);
@@ -88,11 +83,11 @@ void ReadChannels(){                // Read all Channels
 //  Set Servo values
 // -------------------------------------------------------------
 
-#define MIN_US   800  
+#define MIN_US   800
 #define MAX_US  2200
 
-int MinUs[16];
-int MaxUs[16];
+int MinUs[16];  //  
+int MaxUs[16];  //  
 
 void SetServo(int num, int pos) {
   int microsec = map(pos, 0, 1023, MinUs[num],  MaxUs[num]); 
@@ -321,6 +316,17 @@ void DoLive() {
 //          P L A Y  &  R E C C O R D    S E Q U E N C E 
 // -------------------------------------------------------------
 
+#define NbStep  10
+#define NbLines  4
+//int Sequence [NbLines][16] = {
+//  { 1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500 },
+//  { 1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000 },
+//  { 2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000 },
+//  { 1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500 } };
+byte Sequence [NbLines][16];
+// int Current[16]; // deleted use Values
+int Speed = 500;
+
 void DoRecord() {
   TextMenu(F("Reccord"));
   OLed.display();
@@ -330,25 +336,88 @@ void DoRecord() {
     if ( readkey() == BTN_SELECT ) { // if Select Pressed exit
       LetRunning=false;
     }
-          
+       
   }  
   ClearEncoder();
 }
 
 // -------------------------------------------------------------
 
-void DoPlay() {
-  TextMenu(F("Play"));
-  OLed.display();
-  boolean LetRunning = true;
+void setCurrent( int Line, int Step ) {
+  for (int i=0; i<16; i++ ) {
+    Values[1]= (( Step * Sequence[Line][i] + ( NbStep-1 - Step ) * Sequence[Line][i] ) *10 )/ NbStep;
+  }
+}
+  
+void DoPlay() { 
+  boolean WaitToStart = true;
+  boolean LetRunning  = true;
+  while ( WaitToStart ) {
+    ReadBtnState();
+    OLed.clearDisplay();
+    OLed.setTextSize(2);
+    OLed.setCursor(4,  4);  OLed.print(F("Press Sel"));
+    OLed.setCursor(8, 21);  OLed.print(F("to start"));
+    OLed.setCursor(4, 50);  OLed.print(F("speed"));
+    OLed.setCursor(68,50);  OLed.print(Speed);
+    OLed.display();
+    if ( readkey() == BTN_SELECT ) { 
+      WaitToStart=false;
+    }
+    if (encodermov != 0 ) {
+      cli();
+      Speed+=encodermov*10;
+      encodermov=0;
+      sei();
+      if ( Speed > 1000 ) { Speed = 1000; }
+      if ( Speed <    0 ) { Speed =    0; }
+    }   
+  } 
+
+  boolean disp = true;
+  int cline=0;
+  int cstep=0;
+  int otime = millis();
+  
   while ( LetRunning ) {
     ReadBtnState();
     if ( readkey() == BTN_SELECT ) { // if Select Pressed exit
       LetRunning=false;
     }
+    setCurrent( cline, cstep );
+    for(int i=0;i<16;i++) {
+      SetServo(i, Values[i] );
+    }      
+    if ( disp) {
+      OLed.clearDisplay();
+      OLed.setTextSize(2);
+      OLed.setCursor( 4,  4);  OLed.print(F("Running"));
+      OLed.setCursor( 4, 16);  OLed.print(cline);
+      OLed.setCursor(68, 16);  OLed.print(cstep);
+      OLed.setCursor( 4, 50);  OLed.print(F("speed"));
+      OLed.setCursor(68, 50);  OLed.print(Speed);
+      OLed.display();
+    }
+    int t0=millis();
+    if ( ( t0 - otime ) >= Speed ) {
+      otime = t0;
+      cstep++;
+      disp=true;
+      if ( cstep >= NbStep ) {
+        cstep=0;
+        cline++;
+        if ( cline >= NbLines ) {
+          cline=0;
+          LetRunning=false;
+        }
+      }
+    }  
           
   }
-  ClearEncoder();
+  for(int i=0;i<16;i++) {
+    SetServo(i, Sequence[0][i]*10 );
+  }    
+  ClearEncoder(); 
 }
 
 // -------------------------------------------------------------
@@ -443,6 +512,12 @@ void setup(){
   OLed.display();  // display adafruit logo
 
   attachInterrupt(digitalPinToInterrupt(ROT_A), doEncoder, CHANGE );  
+
+  for (byte i=0; i<NbLines ; i++ ) {
+    for ( byte j=0; j<16 ; j++ ) {
+      Sequence[i][j]=MIN_US;
+    }
+  }
 
   Serial.println(F("Running ..."));
   delay(2000);
