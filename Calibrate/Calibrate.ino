@@ -3,10 +3,16 @@
 //
 //  Calibration on Servo 0 to 3 , others works normaly
 //
-// Servo 0 :  1000 us
-// Servo 1 :  1500 us
-// Servo 2 :  2000 us
-// Servo 3 : 10000 us // for for servo but for more precision
+// Servo 0     :  1000 us
+// Servo 1     :  1500 us
+// Servo 2     :  2000 us
+// Servo 3     : 10000 us // not for servo but for more precision
+// Servo 4 & + : acc pot values
+//
+// Set OSCFREQUENCY to 25000000
+// Check with Osciloscope real with of pulse
+// then correct value  New F = F * Measured Pusle With / Theoritical Pulse with
+// otherwise measure frequency , and correcto for having exactly 50 Hz
 //
 // -------------------------------------------------------------
 
