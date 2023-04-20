@@ -1,10 +1,5 @@
 // -------------------------------------------------------------
 //
-//
-// 19/04/2023  Flash :  21844  Mem : 857   Reste : 1191 // 2 lines - ok
-// 20/04/2023  Flash :  21714  Mem : 729   Reste : 1319 // 4 lines - Change sequence from int to byte
-// 20/04/2023  Flash :  21681  Mem : 681   Reste : 1367 // all changed from int to byte
-//                                   713           1335 // 6 lines - ok
 // -------------------------------------------------------------
 
 #define OSCFREQUENCY 28729000
@@ -53,31 +48,33 @@ Adafruit_SSD1306 OLed(OLedWidth, OLedHight, &Wire, OLedReset);
 //  Lectures Valeurs 74HC4067
 // -------------------------------------------------------------
 
-byte Values[16];
+int  Values[16];
+int  OValues[16];
 byte LastChanelchanged = 0;
 
-const byte ch0[16] PROGMEM = { 0,0,0,0, 1,1,1,1, 0,0,0,0, 1,1,1,1 };
-const byte ch1[16] PROGMEM = { 0,0,0,0, 0,0,0,0, 1,1,1,1, 1,1,1,1 };
-const byte ch2[16] PROGMEM = { 0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,0,1 };
-const byte ch3[16] PROGMEM = { 0,0,1,1, 0,0,1,1, 0,0,1,1, 0,0,1,1 };
+const byte ch0[16]  = { 0,0,0,0, 1,1,1,1, 0,0,0,0, 1,1,1,1 };
+const byte ch1[16]  = { 0,0,0,0, 0,0,0,0, 1,1,1,1, 1,1,1,1 };
+const byte ch2[16]  = { 0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,0,1 };
+const byte ch3[16]  = { 0,0,1,1, 0,0,1,1, 0,0,1,1, 0,0,1,1 };
 
-byte ReadChannel(byte chn){            // Read One Channel
-  digitalWrite(S0, pgm_read_byte(&ch0[chn]) );
-  digitalWrite(S1, pgm_read_byte(&ch1[chn]) );
-  digitalWrite(S2, pgm_read_byte(&ch2[chn]) );
-  digitalWrite(S3, pgm_read_byte(&ch3[chn]) );
+int ReadChannel(int chn){            // Read One Channel
+  digitalWrite(S0, ch0[chn] );
+  digitalWrite(S1, ch1[chn] );
+  digitalWrite(S2, ch2[chn] );
+  digitalWrite(S3, ch3[chn] );
   delay(10);
-  byte val = analogRead(SIGNAL) >> 2;
+  int val = analogRead(SIGNAL);
   return val;
 }
 
 void ReadChannels(){                // Read all Channels
-  for(byte i=0;i<16;i++) {
-    byte temp=ReadChannel(i);
-    if ( abs( Values[i] - temp ) > 2) {
+  for(int i=0;i<16;i++) {
+    int temp=ReadChannel(i);
+    if ( abs( OValues[i] - temp ) > 5) {
+       OValues[i]=Values[i];
        LastChanelchanged=i;
     }
-    Values[i]= temp;
+    Values[i]= ReadChannel(i);
   }
 }
 
@@ -85,19 +82,19 @@ void ReadChannels(){                // Read all Channels
 //  Set Servo values
 // -------------------------------------------------------------
 
-#define MIN_US   80
-#define MAX_US  220
+#define MIN_US   800  
+#define MAX_US  2200
 
-byte MinUs[16];  //  
-byte MaxUs[16];  //  
+int MinUs[16];
+int MaxUs[16];
 
-void SetServo(byte num, byte pos) {
-  int microsec = map(pos, 0, 255, MinUs[num]*10,  MaxUs[num]*10); 
+void SetServo(int num, int pos) {
+  int microsec = map(pos, 0, 1023, MinUs[num],  MaxUs[num]); 
   pwm.writeMicroseconds(num, microsec); 
 }
 
 void UpdateServos() {
-  for(byte i=0;i<16;i++) {
+  for(int i=0;i<16;i++) {
     SetServo(i, Values[i] );
   }  
 }
@@ -201,14 +198,14 @@ byte readkey() {
 // Sauvegarde et restauration eeprom
 // -------------------------------------------------------------
 
-const int ProgStamp = 3219;
+const int ProgStamp = 3218;
 
 #define Adr_Stamp  0
 #define Adr_MinUs  2
-#define Adr_MaxUs 18
+#define Adr_MaxUs 34
 
 void InitVars() {
-  for ( byte i=0; i<16 ; i++ ) {
+  for ( int i=0; i<16 ; i++ ) {
     MinUs[i]=MIN_US;
     MaxUs[i]=MAX_US;   
   }
@@ -291,11 +288,21 @@ void DoLive() {
       LetRunning=false;
     }
 
+//    if ( millis() - omillis > 1000 ) { // send datas to serial
+//      omillis=millis();
+//      Serial.print("Value : ");
+//      for(int i = 0; i < 16; i ++){
+//        Serial.print(Values[i]); 
+//        Serial.print(" , ");
+//      }
+//      Serial.println(); 
+//    }
+
     if ( millis() - amillis > 150 ) {  // Display pot changed
       TextMenu(F("Live Mode"));
-      int microsec = map(Values[LastChanelchanged], 0, 255, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
+      int microsec = map(Values[LastChanelchanged], 0, 1023, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
       OLed.setCursor(4 ,50);  OLed.print(LastChanelchanged);
-      OLed.setCursor(68,50);  OLed.print(microsec*10);
+      OLed.setCursor(68,50);  OLed.print(microsec);
       OLed.display();
     }
   }
@@ -309,16 +316,13 @@ void DoLive() {
 // -------------------------------------------------------------
 
 #define NbStep  10
-#define NbLines  6
-byte Sequence [NbLines][16] = {
-  { 127,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 255,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 127,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 255,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 127,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 } };
-
-// int Current[16]; // deleted use Values
+#define NbLines  2
+int Sequence [NbLines][16] = {
+//  { 1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500 },
+//  { 1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000,1000 },
+  { 2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000 },
+  { 1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500 } };
+int Current[16];
 int Speed = 500;
 
 void DoRecord() {
@@ -338,8 +342,8 @@ void DoRecord() {
 // -------------------------------------------------------------
 
 void setCurrent( int Line, int Step ) {
-  for (byte i=0; i<16; i++ ) {
-    Values[1]= (( Step * Sequence[Line][i] + ( NbStep-1 - Step ) * Sequence[Line][i] ) *10 )/ NbStep;
+  for (int i=0; i<16; i++ ) {
+    Current[1]= ( Step * Sequence[Line][i] + ( NbStep-1 - Step ) * Sequence[Line][i] ) / NbStep;
   }
 }
   
@@ -369,9 +373,9 @@ void DoPlay() {
   } 
 
   boolean disp = true;
-  byte cline=0;
-  byte cstep=0;
-  unsigned long otime = millis();
+  int cline=0;
+  int cstep=0;
+  int otime = millis();
   
   while ( LetRunning ) {
     ReadBtnState();
@@ -379,20 +383,20 @@ void DoPlay() {
       LetRunning=false;
     }
     setCurrent( cline, cstep );
-    for(byte i=0;i<16;i++) {
-      SetServo(i, Values[i] );
+    for(int i=0;i<16;i++) {
+      SetServo(i, Current[i] );
     }      
     if ( disp) {
       OLed.clearDisplay();
       OLed.setTextSize(2);
       OLed.setCursor( 4,  4);  OLed.print(F("Running"));
-      OLed.setCursor(20, 24);  OLed.print(cline);
-      OLed.setCursor(68, 24);  OLed.print(cstep);
+      OLed.setCursor( 4, 16);  OLed.print(cline);
+      OLed.setCursor(68, 16);  OLed.print(cstep);
       OLed.setCursor( 4, 50);  OLed.print(F("speed"));
       OLed.setCursor(68, 50);  OLed.print(Speed);
       OLed.display();
     }
-    unsigned long t0=millis();
+    int t0=millis();
     if ( ( t0 - otime ) >= Speed ) {
       otime = t0;
       cstep++;
@@ -420,8 +424,8 @@ void DoPlay() {
 
 void DoSetup() {
   boolean LetRunning = true;
-  byte Channel        = 0;
-  byte AnaVal;
+  int Channel        = 0;
+  int AnaVal;
   int us;
   
   while ( LetRunning ) {
@@ -452,15 +456,17 @@ void DoSetup() {
       if ( Channel <  0 ) { Channel = 15; }
     }
     AnaVal=ReadChannel(Channel);
-    us    =map(AnaVal, 0, 255, MIN_US,MAX_US);
+    us    =map(AnaVal, 0, 1023, MIN_US,MAX_US);
     
     OLed.clearDisplay();
     OLed.setTextColor(SSD1306_WHITE);
     OLed.setCursor(4,  0);  OLed.print(F("Setup"));
+//    OLed.setCursor(4,  0);  OLed.print(F("L Min"));
+//    OLed.setCursor(4, 16);  OLed.print(F("R Max"));
     OLed.setCursor(4, 33);  OLed.print(F("C ")); OLed.print(Channel);
-    OLed.setCursor(4, 50);  OLed.print(us*10);      
-    OLed.setCursor(68,33);  OLed.print(MinUs[Channel]*10);
-    OLed.setCursor(68,50);  OLed.print(MaxUs[Channel]*10);
+    OLed.setCursor(4, 50);  OLed.print(us);      
+    OLed.setCursor(68,33);  OLed.print(MinUs[Channel]);
+    OLed.setCursor(68,50);  OLed.print(MaxUs[Channel]);
     OLed.display();
       
   }
@@ -504,12 +510,6 @@ void setup(){
   OLed.display();  // display adafruit logo
 
   attachInterrupt(digitalPinToInterrupt(ROT_A), doEncoder, CHANGE );  
-
-//  for (byte i=0; i<NbLines ; i++ ) {
-//    for ( byte j=0; j<16 ; j++ ) {
-//      Sequence[i][j]=127;
-//    }
-//  }
 
   Serial.println(F("Running ..."));
   delay(2000);
