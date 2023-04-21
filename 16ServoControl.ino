@@ -85,8 +85,8 @@ void ReadChannels(){                // Read all Channels
 //  Set Servo values
 // -------------------------------------------------------------
 
-#define MIN_US   80
-#define MAX_US  220
+#define MIN_US   60
+#define MAX_US  240
 
 byte MinUs[16];  //  
 byte MaxUs[16];  //  
@@ -311,12 +311,12 @@ void DoLive() {
 #define NbStep  10
 #define NbLines  6
 byte Sequence [NbLines][16] = {
-  { 127,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 255,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 127,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 255,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 127,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 } };
+  { 000,255,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
+  { 255,000,255,000,000,000,000,000,000,000,000,000,000,000,000,000 },
+  { 000,255,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
+  { 255,000,255,000,000,000,000,000,000,000,000,000,000,000,000,000 },
+  { 000,255,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
+  { 255,000,255,000,000,000,000,000,000,000,000,000,000,000,000,000 } };
 
 // int Current[16]; // deleted use Values
 int Speed = 500;
@@ -338,8 +338,12 @@ void DoRecord() {
 // -------------------------------------------------------------
 
 void setCurrent( int Line, int Step ) {
+  int tmp;
   for (byte i=0; i<16; i++ ) {
-    Values[1]= (( Step * Sequence[Line][i] + ( NbStep-1 - Step ) * Sequence[Line][i] ) *10 )/ NbStep;
+    tmp = Step * (int) Sequence[Line][i] +  ( NbStep-1 - Step ) * ( int ) Sequence[Line][i];
+    tmp = tmp / 10;
+    Values[i]= tmp; 
+//    Values[1]= (( Step * Sequence[Line][i] + ( NbStep-1 - Step ) * Sequence[Line][i] ) *10 )/ NbStep;
   }
 }
   
@@ -379,9 +383,10 @@ void DoPlay() {
       LetRunning=false;
     }
     setCurrent( cline, cstep );
-    for(byte i=0;i<16;i++) {
-      SetServo(i, Values[i] );
-    }      
+    UpdateServos();
+//    for(byte i=0;i<16;i++) {
+//      SetServo(i, Values[i] );
+//    }      
     if ( disp) {
       OLed.clearDisplay();
       OLed.setTextSize(2);
