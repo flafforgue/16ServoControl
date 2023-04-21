@@ -339,13 +339,18 @@ void DoRecord() {
 
 void setCurrent( int Line, int Step ) {
   int tmp;
+  Serial.print(Line);   Serial.print(" , ");
+  Serial.print(Step);   Serial.print(" : ");
+  Serial.print(Sequence[Line][0]);   Serial.print(" : ");
   for (byte i=0; i<16; i++ ) {
-    tmp = Step * (int) Sequence[Line][i] +  ( NbStep-1 - Step ) * ( int ) Sequence[Line][i];
-    tmp = tmp / 10;
+    tmp = (( int ) ( NbStep-1 -  Step) * (int) Sequence[Line][i]  +  (int )( Step ) * ( int ) Sequence[(Line+1) % NbLines][i])/10;
     Values[i]= tmp; 
+    Serial.print(tmp);   Serial.print(" , ");
 //    Values[1]= (( Step * Sequence[Line][i] + ( NbStep-1 - Step ) * Sequence[Line][i] ) *10 )/ NbStep;
   }
+  Serial.println("");
 }
+
   
 void DoPlay() { 
   boolean WaitToStart = true;
@@ -416,6 +421,7 @@ void DoPlay() {
   for(int i=0;i<16;i++) {
     SetServo(i, Sequence[0][i] );
   }    
+
   ClearEncoder(); 
 }
 
