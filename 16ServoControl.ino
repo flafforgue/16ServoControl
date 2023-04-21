@@ -5,6 +5,7 @@
 // 20/04/2023  Flash :  21714  Mem : 729   Reste : 1319 // 4 lines - Change sequence from int to byte
 // 20/04/2023  Flash :  21681  Mem : 681   Reste : 1367 // all changed from int to byte
 //                                   713           1335 // 6 lines - ok
+// 21/04/2023  Flash :  21862  Mem : 713   Reste : 1335
 // -------------------------------------------------------------
 
 #define OSCFREQUENCY 28729000
@@ -339,16 +340,16 @@ void DoRecord() {
 
 void setCurrent( int Line, int Step ) {
   int tmp;
-  Serial.print(Line);   Serial.print(" , ");
-  Serial.print(Step);   Serial.print(" : ");
-  Serial.print(Sequence[Line][0]);   Serial.print(" : ");
+//  Serial.print(Line);   Serial.print(" , ");
+//  Serial.print(Step);   Serial.print(" : ");
+//  Serial.print(Sequence[Line][0]);   Serial.print(" : ");
   for (byte i=0; i<16; i++ ) {
     tmp = (( int ) ( NbStep-1 -  Step) * (int) Sequence[Line][i]  +  (int )( Step ) * ( int ) Sequence[(Line+1) % NbLines][i])/10;
     Values[i]= tmp; 
-    Serial.print(tmp);   Serial.print(" , ");
+//    Serial.print(tmp);   Serial.print(" , ");
 //    Values[1]= (( Step * Sequence[Line][i] + ( NbStep-1 - Step ) * Sequence[Line][i] ) *10 )/ NbStep;
   }
-  Serial.println("");
+//  Serial.println("");
 }
 
   
