@@ -253,7 +253,7 @@ void InitFromEprom () {
 }
 
 // -------------------------------------------------------------
-//                           M E N U
+//                  M E N U    &   D I S P L A Y
 // -------------------------------------------------------------
 
 #define L1       0
@@ -269,6 +269,24 @@ void TextMenu(String str) {
   OLed.setTextColor(SSD1306_WHITE);
   OLed.setCursor(Lmargin, L1);
   OLed.println(str); 
+}
+
+void OLedprint2 ( int value ) {
+//  char buff[3];
+//  sprintf(buff, "%2d", value);
+//  OLed.print(buff);
+   if (( value ) < 10 ) { OLed.print(F(" ")); } 
+   OLed.print(value);
+}
+
+void OLedprint4 ( int value ) {
+//  char buff[5];
+//  sprintf(buff, "%4d", value);
+//  OLed.print(buff);
+   if (( value ) < 1000 ) { OLed.print(F(" ")); } 
+   if (( value ) <  100 ) { OLed.print(F(" ")); }   
+   if (( value ) <   10 ) { OLed.print(F(" ")); }
+   OLed.print(value);
 }
 
 // -------------------------------------------------------------
@@ -290,8 +308,8 @@ void DoLive() {
     if ( millis() - omillis > 150 ) { // Refresh Display every 150 us
       TextMenu(F("Live"));
       int microsec = map(Values[LastChanelchanged], 0, 255, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
-      OLed.setCursor(4 ,L4);  OLed.print(LastChanelchanged);
-      OLed.setCursor(68,L4);  OLed.print(microsec*10);
+      OLed.setCursor(4 ,L4);  OLedprint2(LastChanelchanged);
+      OLed.setCursor(68,L4);  OLedprint4(microsec*10);
       OLed.display();
       omillis = millis();
     }
@@ -316,6 +334,8 @@ byte Sequence [NbLines][16] = {
 
 // int Current[16]; // deleted use Values
 int Speed = 500;
+
+
 
 void DoRecord() {
   boolean       LetRunning = true;
@@ -342,11 +362,11 @@ void DoRecord() {
       TextMenu(F("Reccord"));
       int microsec = map(Values[LastChanelchanged], 0, 255, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
 
-      OLed.setCursor( 4, L3);  OLed.print(F("Step"));
-      OLed.setCursor(68, L3);  OLed.print( (byte) CurLine+1);
+      OLed.setCursor( 4, L2);  OLed.print(F("Step"));
+      OLed.setCursor(68, L2);  OLedprint4( (byte) CurLine+1);
       
-      OLed.setCursor( 4, L4);   OLed.print(LastChanelchanged);
-      OLed.setCursor(68, L4);   OLed.print(microsec*10);
+      OLed.setCursor( 4, L4);  OLedprint2(LastChanelchanged);
+      OLed.setCursor(68, L4);  OLedprint4(microsec*10);
       OLed.display();
       omillis = millis();
     }
@@ -382,7 +402,7 @@ void DoPlay() {
     OLed.setCursor(4, L1);  OLed.print(F("Press Sel"));
     OLed.setCursor(8, L2);  OLed.print(F("to start"));
     OLed.setCursor(4, L4);  OLed.print(F("speed"));
-    OLed.setCursor(68,L4);  OLed.print(Speed);
+    OLed.setCursor(68,L4);  OLedprint4(Speed);
     OLed.display();
     if ( readkey() == BTN_SELECT ) { 
       WaitToStart=false;
@@ -416,10 +436,10 @@ void DoPlay() {
       OLed.clearDisplay();
       OLed.setTextSize(2);
       OLed.setCursor( 4, L1);  OLed.print(F("Running"));
-      OLed.setCursor(20, L2);  OLed.print(cline);
-      OLed.setCursor(68, L2);  OLed.print(cstep);
+      OLed.setCursor(20, L2);  OLedprint2(cline);
+      OLed.setCursor(68, L2);  OLedprint2(cstep);
       OLed.setCursor( 4, L4);  OLed.print(F("speed"));
-      OLed.setCursor(68, L4);  OLed.print(Speed);
+      OLed.setCursor(68, L4);  OLedprint4(Speed);
       OLed.display();
     }
     unsigned long t0=millis();
@@ -488,10 +508,10 @@ void DoSetup() {
     OLed.clearDisplay();
     OLed.setTextColor(SSD1306_WHITE);
     OLed.setCursor(4, L1);  OLed.print(F("Setup"));
-    OLed.setCursor(4, L3);  OLed.print(F("C ")); OLed.print( (byte) Channel);
-    OLed.setCursor(4, L4);  OLed.print(us*10);      
-    OLed.setCursor(68,L3);  OLed.print(MinUs[Channel]*10);
-    OLed.setCursor(68,L4);  OLed.print(MaxUs[Channel]*10);
+    OLed.setCursor(4, L3);  OLed.print(F("C ")); OLedprint2( (byte) Channel);
+    OLed.setCursor(4, L4);  OLedprint4(us*10);      
+    OLed.setCursor(68,L3);  OLedprint4(MinUs[Channel]*10);
+    OLed.setCursor(68,L4);  OLedprint4(MaxUs[Channel]*10);
     OLed.display(); 
   }
   ClearEncoder();
@@ -570,10 +590,10 @@ void loop(){
     OLed.setTextSize(2);
     OLed.fillRect(0, menu*16, 127, 16, SSD1306_WHITE);
     OLed.setTextColor(SSD1306_INVERSE);
-    OLed.setCursor(4, L1);  OLed.println(F("Live"));
-    OLed.setCursor(4, L2);  OLed.println(F("Play"));
-    OLed.setCursor(4, L3);  OLed.println(F("Record"));
-    OLed.setCursor(4, L4);  OLed.println(F("Setup"));
+    OLed.setCursor(4, L1);  OLed.print(F("Live"));
+    OLed.setCursor(4, L2);  OLed.print(F("Play"));
+    OLed.setCursor(4, L3);  OLed.print(F("Record"));
+    OLed.setCursor(4, L4);  OLed.print(F("Setup"));
     OLed.display();
     omenu=menu;
   }
