@@ -325,28 +325,68 @@ void DoLive() {
 #define NbStep  10
 #define NbLines  6
 byte Sequence [NbLines][16] = {
-  { 000,255,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 255,000,255,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,255,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 255,000,255,000,000,000,000,000,000,000,000,000,000,000,000,000 },
+  { 000,255,000,127,127,127,127,000,000,000,000,000,000,000,000,000 },
+  { 255,000,255,127,127,127,000,000,000,000,000,000,000,000,000,000 },
+  { 000,255,000,127,127,000,000,000,000,000,000,000,000,000,000,000 },
+  { 255,000,255,127,000,000,000,000,000,000,000,000,000,000,000,000 },
   { 000,255,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
   { 255,000,255,000,000,000,000,000,000,000,000,000,000,000,000,000 } };
 
 // int Current[16]; // deleted use Values
-int Speed = 500;
+int  Speed = 500;
+//byte Seq[16];
 
+unsigned long Lck;
 
+void InitCurentSeq(byte line) {
+//  for ( byte i=0; i<16; i++ ) {
+//    Seq[i] = Sequence[line][i];
+//  }
+  Lck = 0xFFFF;
+}
+
+void UnlockChanels(byte line) {
+  unsigned long temp;
+  for (byte i=0; i<16; i++ ) {
+//    if ( abs ( (int) Seq[i] - (int) Values[i] ) < 2 ) {
+    if ( abs ( (int) Sequence[line][i] - (int) Values[i] ) < 2 ) {
+      temp = ~( 1 << i );
+      Lck  =  Lck & temp ;     
+    }
+    if (( Lck & ( 1 << i) ) == 0 ) {
+//      Seq[i] = Values[i];
+      Sequence[line][i] = Values[i];
+    }
+  } 
+}
+
+boolean IsLocked ( byte Chanel ) {
+  return ( ( Lck & ( 1 << Chanel) ) != 0  );
+}
+
+void UpdateServosSeq(byte line) {
+  for(byte i=0;i<16;i++) {
+//    SetServo(i, Seq[i] );
+    SetServo(i, Sequence[line][i] );
+  }  
+}
 
 void DoRecord() {
   boolean       LetRunning = true;
   unsigned long omillis    = 0;  
   char          CurLine    = 0;
+  byte          oLine      = 1;
 
   while ( LetRunning ) {
+    if ( oLine != CurLine ) {
+      InitCurentSeq(CurLine);
+      oLine = CurLine;
+    }
     ReadChannels();
-    UpdateServos();
+    UnlockChanels(CurLine);        // Channels are Locked until unlocked by setting pot equal to seq
+    UpdateServosSeq(CurLine);      
     ReadBtnState();
-
+    
     switch ( readkey() ) {
       case BTN_RIGHT:       CurLine++;
                             break;
@@ -361,10 +401,21 @@ void DoRecord() {
     if ( millis() - omillis > 150 ) {  // Refresh Display every 150 us
       TextMenu(F("Reccord"));
       int microsec = map(Values[LastChanelchanged], 0, 255, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
-
-      OLed.setCursor( 4, L2);  OLed.print(F("Step"));
-      OLed.setCursor(68, L2);  OLedprint4( (byte) CurLine+1);
+    
+      for ( byte j=0; j<16 ; j++ ) {          // Mark Locked Channels
+         if ( ( Lck & ( 1 << j) ) != 0 ) {
+           OLed.fillRect(8 + j*6, L2+3, 5, 8, SSD1306_WHITE);      
+        }
+      }
+      OLed.setTextColor(SSD1306_INVERSE);
+      OLed.setTextSize(1);
+      OLed.setCursor( 8, L2+3);OLed.print(F("0123456789012345"));
+      OLed.setTextSize(2);
+      OLed.setTextColor(SSD1306_WHITE);
       
+      OLed.setCursor( 4, L3);  OLed.print(F("Step"));
+      OLed.setCursor(68, L3);  OLedprint4( (byte) CurLine+1);
+          
       OLed.setCursor( 4, L4);  OLedprint2(LastChanelchanged);
       OLed.setCursor(68, L4);  OLedprint4(microsec*10);
       OLed.display();
