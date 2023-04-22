@@ -86,8 +86,8 @@ void ReadChannels(){                // Read all Channels
 //  Set Servo values
 // -------------------------------------------------------------
 
-#define MIN_US   60
-#define MAX_US  240
+#define MIN_US   50    //   500 us
+#define MAX_US  250    //  2500 us
 
 byte MinUs[16];  //  
 byte MaxUs[16];  //  
@@ -253,11 +253,11 @@ void InitFromEprom () {
 }
 
 // -------------------------------------------------------------
-// 
+//                           M E N U
 // -------------------------------------------------------------
 
 void TextMenu(String str) {
-  Serial.println(str);
+//  Serial.println(str);
   OLed.clearDisplay();
   OLed.setTextSize(2);
   OLed.setTextColor(SSD1306_WHITE);
@@ -270,20 +270,13 @@ void TextMenu(String str) {
 // -------------------------------------------------------------
 
 void DoLive() {
-//  Serial.println(F("Enter Live Mode"));
-//  OLed.clearDisplay();
-//  OLed.setTextSize(2);
-//  OLed.setTextColor(SSD1306_WHITE);
-//  OLed.setCursor(0, 10);
-//  OLed.println(F("Live Mode"));
-//  OLed.display();
-    TextMenu(F("Live Mode"));
-    OLed.display();
-    
   boolean LetRunning = true;
   unsigned long omillis = 0;
   unsigned long amillis = 0;  
   
+  TextMenu(F("Live Mode"));
+  OLed.display();
+    
   while ( LetRunning ) {
     ReadChannels();
     UpdateServos();
@@ -302,7 +295,7 @@ void DoLive() {
   }
 
   ClearEncoder();
-  Serial.println(F("Leave Live Mode"));
+//  Serial.println(F("Leave Live Mode"));
 }
 
 // -------------------------------------------------------------
