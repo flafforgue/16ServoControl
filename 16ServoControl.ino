@@ -256,12 +256,18 @@ void InitFromEprom () {
 //                           M E N U
 // -------------------------------------------------------------
 
+#define L1       0
+#define L2      16
+#define L3      32
+#define L4      48
+#define Lmargin  4
+
 void TextMenu(String str) {
 //  Serial.println(str);
   OLed.clearDisplay();
   OLed.setTextSize(2);
   OLed.setTextColor(SSD1306_WHITE);
-  OLed.setCursor(5, 10);
+  OLed.setCursor(Lmargin, L1);
   OLed.println(str); 
 }
 
@@ -270,32 +276,28 @@ void TextMenu(String str) {
 // -------------------------------------------------------------
 
 void DoLive() {
-  boolean LetRunning = true;
-  unsigned long omillis = 0;
-  unsigned long amillis = 0;  
-  
-  TextMenu(F("Live Mode"));
-  OLed.display();
+  boolean       LetRunning = true;
+  unsigned long omillis    = 0;  
     
   while ( LetRunning ) {
     ReadChannels();
     UpdateServos();
     ReadBtnState();
-    if ( readkey() == BTN_SELECT ) { // if Select Pressed exit
+    if ( readkey() == BTN_SELECT ) {  // if Select Pressed exit
       LetRunning=false;
     }
 
-    if ( millis() - amillis > 150 ) {  // Display pot changed
-      TextMenu(F("Live Mode"));
+    if ( millis() - omillis > 150 ) { // Refresh Display every 150 us
+      TextMenu(F("Live"));
       int microsec = map(Values[LastChanelchanged], 0, 255, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
-      OLed.setCursor(4 ,50);  OLed.print(LastChanelchanged);
-      OLed.setCursor(68,50);  OLed.print(microsec*10);
+      OLed.setCursor(4 ,L4);  OLed.print(LastChanelchanged);
+      OLed.setCursor(68,L4);  OLed.print(microsec*10);
       OLed.display();
+      omillis = millis();
     }
   }
 
   ClearEncoder();
-//  Serial.println(F("Leave Live Mode"));
 }
 
 // -------------------------------------------------------------
@@ -316,17 +318,42 @@ byte Sequence [NbLines][16] = {
 int Speed = 500;
 
 void DoRecord() {
-  TextMenu(F("Reccord"));
-  OLed.display();
-  boolean LetRunning = true;
+  boolean       LetRunning = true;
+  unsigned long omillis    = 0;  
+  char          CurLine    = 0;
+
   while ( LetRunning ) {
+    ReadChannels();
+    UpdateServos();
     ReadBtnState();
-    if ( readkey() == BTN_SELECT ) { // if Select Pressed exit
-      LetRunning=false;
+
+    switch ( readkey() ) {
+      case BTN_RIGHT:       CurLine++;
+                            break;
+      case BTN_LEFT:        CurLine--;
+                            break;    
+      case BTN_SELECT:      
+      case BTN_SELECT_Long: LetRunning=false;                        
     }
-       
-  }  
+    if ( CurLine <       0 ) { CurLine =       0; }
+    if ( CurLine > CurLine ) { CurLine = CurLine; }
+    
+    if ( millis() - omillis > 150 ) {  // Refresh Display every 150 us
+      TextMenu(F("Reccord"));
+      int microsec = map(Values[LastChanelchanged], 0, 255, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
+
+      OLed.setCursor( 4, L3);  OLed.print(F("Step"));
+      OLed.setCursor(68, L3);  OLed.print( (byte) CurLine+1);
+      
+      OLed.setCursor( 4, L4);   OLed.print(LastChanelchanged);
+      OLed.setCursor(68, L4);   OLed.print(microsec*10);
+      OLed.display();
+      omillis = millis();
+    }
+  }
+
   ClearEncoder();
+//  Serial.println(F("Leave Live"));
 }
 
 // -------------------------------------------------------------
@@ -345,7 +372,6 @@ void setCurrent( int Line, int Step ) {
 //  Serial.println("");
 }
 
-  
 void DoPlay() { 
   boolean WaitToStart = true;
   boolean LetRunning  = true;
@@ -353,10 +379,10 @@ void DoPlay() {
     ReadBtnState();
     OLed.clearDisplay();
     OLed.setTextSize(2);
-    OLed.setCursor(4,  4);  OLed.print(F("Press Sel"));
-    OLed.setCursor(8, 21);  OLed.print(F("to start"));
-    OLed.setCursor(4, 50);  OLed.print(F("speed"));
-    OLed.setCursor(68,50);  OLed.print(Speed);
+    OLed.setCursor(4, L1);  OLed.print(F("Press Sel"));
+    OLed.setCursor(8, L2);  OLed.print(F("to start"));
+    OLed.setCursor(4, L4);  OLed.print(F("speed"));
+    OLed.setCursor(68,L4);  OLed.print(Speed);
     OLed.display();
     if ( readkey() == BTN_SELECT ) { 
       WaitToStart=false;
@@ -371,9 +397,9 @@ void DoPlay() {
     }   
   } 
 
-  boolean disp = true;
-  byte cline=0;
-  byte cstep=0;
+  boolean       disp  = true;
+  byte          cline = 0;
+  byte          cstep = 0;
   unsigned long otime = millis();
   
   while ( LetRunning ) {
@@ -389,11 +415,11 @@ void DoPlay() {
     if ( disp) {
       OLed.clearDisplay();
       OLed.setTextSize(2);
-      OLed.setCursor( 4,  4);  OLed.print(F("Running"));
-      OLed.setCursor(20, 24);  OLed.print(cline);
-      OLed.setCursor(68, 24);  OLed.print(cstep);
-      OLed.setCursor( 4, 50);  OLed.print(F("speed"));
-      OLed.setCursor(68, 50);  OLed.print(Speed);
+      OLed.setCursor( 4, L1);  OLed.print(F("Running"));
+      OLed.setCursor(20, L2);  OLed.print(cline);
+      OLed.setCursor(68, L2);  OLed.print(cstep);
+      OLed.setCursor( 4, L4);  OLed.print(F("speed"));
+      OLed.setCursor(68, L4);  OLed.print(Speed);
       OLed.display();
     }
     unsigned long t0=millis();
@@ -424,10 +450,10 @@ void DoPlay() {
 // -------------------------------------------------------------
 
 void DoSetup() {
-  boolean LetRunning = true;
-  byte Channel        = 0;
-  byte AnaVal;
-  int us;
+  boolean   LetRunning  = true;
+  char      Channel     = 0;
+  byte      AnaVal;
+  int       us;
   
   while ( LetRunning ) {
     ReadBtnState();
@@ -453,21 +479,20 @@ void DoSetup() {
       Channel+=encodermov;
       encodermov=0;
       sei();
-      if ( Channel > 15 ) { Channel =  0; }
       if ( Channel <  0 ) { Channel = 15; }
+      if ( Channel > 15 ) { Channel =  0; }
     }
     AnaVal=ReadChannel(Channel);
     us    =map(AnaVal, 0, 255, MIN_US,MAX_US);
     
     OLed.clearDisplay();
     OLed.setTextColor(SSD1306_WHITE);
-    OLed.setCursor(4,  0);  OLed.print(F("Setup"));
-    OLed.setCursor(4, 33);  OLed.print(F("C ")); OLed.print(Channel);
-    OLed.setCursor(4, 50);  OLed.print(us*10);      
-    OLed.setCursor(68,33);  OLed.print(MinUs[Channel]*10);
-    OLed.setCursor(68,50);  OLed.print(MaxUs[Channel]*10);
-    OLed.display();
-      
+    OLed.setCursor(4, L1);  OLed.print(F("Setup"));
+    OLed.setCursor(4, L3);  OLed.print(F("C ")); OLed.print( (byte) Channel);
+    OLed.setCursor(4, L4);  OLed.print(us*10);      
+    OLed.setCursor(68,L3);  OLed.print(MinUs[Channel]*10);
+    OLed.setCursor(68,L4);  OLed.print(MaxUs[Channel]*10);
+    OLed.display(); 
   }
   ClearEncoder();
 }
@@ -518,6 +543,7 @@ void setup(){
 
   Serial.println(F("Running ..."));
   delay(2000);
+  ClearEncoder();
 }
 
 // -------------------------------------------------------------
@@ -525,7 +551,7 @@ void setup(){
 // -------------------------------------------------------------
 
 int menu  = 0;
-int omenu = 1;
+int omenu = 2;
 
 void loop(){
   ReadBtnState(); 
@@ -535,19 +561,19 @@ void loop(){
     menu+=encodermov;
     encodermov=0;
     sei();
-    if ( menu > 4 ) { menu=0; }
-    if ( menu < 0 ) { menu=4; }
+    if ( menu > 3 ) { menu=0; }
+    if ( menu < 0 ) { menu=3; }
   }
 
   if ( menu != omenu ) {
     OLed.clearDisplay();
     OLed.setTextSize(2);
-    OLed.fillRect(0, menu*17, 127, 16, SSD1306_WHITE);
+    OLed.fillRect(0, menu*16, 127, 16, SSD1306_WHITE);
     OLed.setTextColor(SSD1306_INVERSE);
-    OLed.setCursor(4,  0);  OLed.println(F("Live Mode"));
-    OLed.setCursor(4, 16);  OLed.println(F("Play"));
-    OLed.setCursor(4, 33);  OLed.println(F("Record"));
-    OLed.setCursor(4, 50);  OLed.println(F("Setup"));
+    OLed.setCursor(4, L1);  OLed.println(F("Live"));
+    OLed.setCursor(4, L2);  OLed.println(F("Play"));
+    OLed.setCursor(4, L3);  OLed.println(F("Record"));
+    OLed.setCursor(4, L4);  OLed.println(F("Setup"));
     OLed.display();
     omenu=menu;
   }
