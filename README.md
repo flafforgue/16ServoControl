@@ -6,9 +6,9 @@ All function running
 
 **Reccord :**<br>
 when changing of line Servo locked to stored value,<br>
-need to move pot to reccorded value to unlock<>
+need to move pot to reccorded value to unlock<br>
 after unlocking servo can move according pot pos.<br><br>
-change line usin left and right button<br>
+change line using left and right button<br>
 save by long press on Sel Btn<br>
 number of step given by exit line number<br>
 <br>
