@@ -1,6 +1,8 @@
 // -------------------------------------------------------------
 //
 // 16 Servos Controler
+//
+// Version 1.01  add MIN_SAFE_US & MAX_SAFE_US
 // Version 1.00  first complete version
 // (c) 2023 F.LAFFORGUE
 //
@@ -16,6 +18,9 @@
                            // Range can be reduced in Setup
 #define MIN_US   50        //   500 us  
 #define MAX_US  250        //  2500 us
+
+#define MIN_SAFE_US  60
+#define MAX_SAFE_US 240
 
 #define SERIALDEBUG        // use 444o flash and 20o Ram more
 
@@ -531,11 +536,11 @@ void DoConfig() {
     switch ( readkey() ) {
       case BTN_RIGHT:       MaxUs[Channel]=us;
               break;     
-      case BTN_RIGHT_Long:  MaxUs[Channel]=MAX_US;
+      case BTN_RIGHT_Long:  MaxUs[Channel]=MAX_SAFE_US;
               break;
       case BTN_LEFT:        MinUs[Channel]=us;
               break;
-      case BTN_LEFT_Long:   MinUs[Channel]=MIN_US;
+      case BTN_LEFT_Long:   MinUs[Channel]=MIN_SAFE_US;
               break;
       case BTN_SELECT:      LetRunning=false;
               break;
@@ -584,8 +589,8 @@ const int ProgStamp = 3220;
 
 void InitVars() {
   for ( byte i=0; i<16 ; i++ ) {
-    MinUs[i]= 60; // By default set to  600 us min
-    MaxUs[i]=240; // By default set to 2400 us Max
+    MinUs[i]= MIN_SAFE_US; // By default set to  600 us min
+    MaxUs[i]= MAX_SAFE_US; // By default set to 2400 us Max
   }
 }
 
