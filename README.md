@@ -2,7 +2,9 @@
 
  16 Servo Controler using PCA9685 , 74hc4067 mux and SSD1306 Oled display
 
-All function running
+Remark : be careful with the power supply, with an insufficient power the voltage can drop and cause a blocking or a reset of the arduino. A solution is to use two separate power supplies for the servos and for the arduino<br>
+
+All function running !
 
 **Reccord :**<br>
 when changing of line Servo locked to stored value,<br>
