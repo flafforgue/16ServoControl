@@ -6,7 +6,7 @@ Remark : be careful with the power supply, with an insufficient power the voltag
 
 All function running !
 
-**Live**<br>
+**Live:**<br>
 Turn pot to move servo in real time.<br>
 by default pulse between 600 and 2400 us , can be configured in setup for each channel.<br>
 display pulse in us of last channel moved.<br>
@@ -23,8 +23,8 @@ save by long press on Sel Btn.<br>
 number of step given by exit line number.<br>
 <br>
 
-**Play**<br>
-By default running in loop, exit by pressing "Sel" button. may be configurated is software.<br>
+**Play:**<br>
+By default running in loop, exit by pressing "Sel" button. may be configurated by compilation option.<br>
 Speed is not a real speed , but time in us between to steps. by default fadding between lines use 10 steps.<br>
 <br>
 
@@ -33,7 +33,7 @@ Set minimum and maximum pulse with <br>
 maximal range is 500 to 2500 us.<br>
 By default live update of servo, it is reccomended to put pots in middle before entering in setup<br>
 Extreme range can damadge servos ( 500~800) ( 2200~2500).<br> 
-Real time servo updating may be removed by software configuration option.<br>
+Real time servo updating may be removed by software compilation option.<br>
  L button to set min Value<br>
  R Button to set max Value<br>
  Long Press L reset to min to MIN_SAFE_US<br>
