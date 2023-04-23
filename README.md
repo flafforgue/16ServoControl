@@ -9,7 +9,7 @@ All function running !
 **Live**<br>
 Turn pot to move servo in real time<br>
 by default pulse between 600 and 2400 us , can be configured in setup for each channel<br>
-display pulse in us<br>
+display pulse in us of last channel moved<br>
 <br>
 
 **Reccord :**<br>
