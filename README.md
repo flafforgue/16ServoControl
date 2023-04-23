@@ -32,7 +32,7 @@ Speed is not a real speed , but time in us between to steps. by default fadding 
 Set minimum and maximum pulse with <br>
 maximal range is 500 to 2500 us.<br>
 By default live update of servo, it is reccomended to put pots in middle before entering in setup<br>
-Extreme range can damadge servos ( 500~800) ( 2200~2500).<br> 
+Extreme range can damadge servos ( 500-800) ( 2200-2500).<br> 
 Real time servo updating may be removed by software compilation option.<br>
  L button to set min Value<br>
  R Button to set max Value<br>
