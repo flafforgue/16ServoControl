@@ -7,7 +7,7 @@ Remark : be careful with the power supply, with an insufficient power the voltag
 All function running !
 
 **Live**<br>
-Turn pot servo move<br>
+Turn pot to move servo in real time<br>
 by default pulse between 600 and 2400 us , can be configured in setup for each channel<br>
 display pulse in us<br>
 <br>
