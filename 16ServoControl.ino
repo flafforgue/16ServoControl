@@ -2,6 +2,8 @@
 //
 // 16 Servos Controler
 //
+// Version 1.03  Add inversion possibility
+//               CONFIGMOVESERVO no more enabled
 // Version 1.02  Copy previous step in reccord mode
 // Version 1.01  add MIN_SAFE_US & MAX_SAFE_US
 // Version 1.00  first complete version
@@ -16,7 +18,7 @@
 
 // Configuration options
 
-#define PROGSTAMP 3221
+#define PROGSTAMP 3223
 
                            // Range can be reduced in Setup
 #define MIN_US   50        //   500 us  
@@ -27,11 +29,11 @@
 
 #define SERIALDEBUG        // use 444o flash and 20o Ram more
 
-#define CONFIGMOVESERVO    // Moving Servos when config
+//#define CONFIGMOVESERVO    // Moving Servos when config
                            // Be carful as May damage Servo
                            // pulse may vary from 500 to 2500 us
                            
-#define CONFIGAUTOCHANGE   // Automaticly change Chanel when Pot moved
+#define CONFIGAUTOCHANGE   // Automaticly change Channel when Pot moved
                            // Otherwise change by rotating encoder
 
 #define MODELOOP           // Loop in play mode until "Btn Press"
@@ -85,7 +87,7 @@ Adafruit_SSD1306 OLed(OLedWidth, OLedHight, &Wire, OLedReset);
 // -------------------------------------------------------------
 
 byte Values[16];
-byte LastChanelchanged = 0;
+byte LastChannelchanged = 0;
   
 const byte ch0[16] PROGMEM = { 0,0,0,0, 1,1,1,1, 0,0,0,0, 1,1,1,1 };
 const byte ch1[16] PROGMEM = { 0,0,0,0, 0,0,0,0, 1,1,1,1, 1,1,1,1 };
@@ -106,7 +108,7 @@ void ReadChannels(){                // Read all Channels
   for(byte i=0;i<16;i++) {
     byte temp=ReadChannel(i);
     if ( abs( Values[i] - temp ) > 2) {
-       LastChanelchanged=i;
+       LastChannelchanged=i;
     }
     Values[i]= temp;
   }
@@ -119,8 +121,19 @@ void ReadChannels(){                // Read all Channels
 byte MinUs[16];  //  
 byte MaxUs[16];  //  
 
+unsigned long Inverted =0x0002;
+
+boolean IsInverted ( byte Channel ) {
+  return ( ( Inverted & ( 1 << Channel) ) != 0  );
+}
+
 void SetServo(byte num, byte pos) {
-  int microsec = map(pos, 0, 255, MinUs[num]*10,  MaxUs[num]*10); 
+  int microsec;
+  if ( ( Inverted & ( 1 << num) ) != 0 ) {
+    microsec = map(pos, 0, 255, MaxUs[num]*10,  MinUs[num]*10);
+  } else {
+    microsec = map(pos, 0, 255, MinUs[num]*10,  MaxUs[num]*10);
+  }
   pwm.writeMicroseconds(num, microsec); 
 }
 
@@ -289,6 +302,7 @@ void WaitToStart() {
 void DoLive() {
   boolean       LetRunning = true;
   unsigned long omillis    = 0;  
+  int microsec ;
     
   while ( LetRunning ) {
     ReadChannels();
@@ -300,8 +314,13 @@ void DoLive() {
 
     if ( millis() - omillis > 150 ) { // Refresh Display every 150 us
       TitleMenu(F("Live"));
-      int microsec = map(Values[LastChanelchanged], 0, 255, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
-      OLed.setCursor(4 ,L4);  OLedprint2(LastChanelchanged);
+      if ( IsInverted(LastChannelchanged) ) {
+        microsec = map(Values[LastChannelchanged], 0, 255, MaxUs[LastChannelchanged], MinUs[LastChannelchanged]);
+      } else {
+        microsec = map(Values[LastChannelchanged], 0, 255, MinUs[LastChannelchanged],  MaxUs[LastChannelchanged]);
+      }
+
+      OLed.setCursor(4 ,L4);  OLedprint2(LastChannelchanged);
       OLed.setCursor(68,L4);  OLedprint4(microsec*10);
       OLed.display();
       omillis = millis();
@@ -337,7 +356,7 @@ unsigned long Lck;
 #define UNLOCKALL 0x0000
 #define LOCKALL   0xFFFF
 
-void UnlockChanels(byte line) {
+void UnlockChannels(byte line) {
   unsigned long temp;
   for (byte i=0; i<16; i++ ) {
     if ( abs ( (int) Sequence[line][i] - (int) Values[i] ) < 2 ) {
@@ -350,8 +369,8 @@ void UnlockChanels(byte line) {
   } 
 }
 
-boolean IsLocked ( byte Chanel ) {
-  return ( ( Lck & ( 1 << Chanel) ) != 0  );
+boolean IsLocked ( byte Channel ) {
+  return ( ( Lck & ( 1 << Channel) ) != 0  );
 }
 
 void UpdateServosSeq(byte line) {
@@ -393,7 +412,7 @@ void DoRecord() {
       oLine = CurLine;
     }
     ReadChannels();
-    UnlockChanels(CurLine);        // Channels are Locked until unlocked by setting pot equal to seq
+    UnlockChannels(CurLine);        // Channels are Locked until unlocked by setting pot equal to seq
     UpdateServosSeq(CurLine);      
     ReadBtnState();
     
@@ -412,7 +431,7 @@ void DoRecord() {
     
     if ( millis() - omillis > 150 ) {  // Refresh Display every 150 us
       TitleMenu(F("Reccord"));
-      int microsec = map(Values[LastChanelchanged], 0, 255, MinUs[LastChanelchanged],  MaxUs[LastChanelchanged]);
+      int microsec = map(Values[LastChannelchanged], 0, 255, MinUs[LastChannelchanged],  MaxUs[LastChannelchanged]);
     
       for ( byte j=0; j<16 ; j++ ) {          // Mark Locked Channels
         if ( ( Lck & ( 1 << j) ) != 0 ) {
@@ -428,7 +447,7 @@ void DoRecord() {
       OLed.setCursor( 4, L3);  OLed.print(F("Step"));
       OLed.setCursor(68, L3);  OLedprint4( (byte) CurLine+1);
           
-      OLed.setCursor( 4, L4);  OLedprint2(LastChanelchanged);
+      OLed.setCursor( 4, L4);  OLedprint2(LastChannelchanged);
       OLed.setCursor(68, L4);  OLedprint4(microsec*10);
       OLed.display();
       omillis = millis();
@@ -551,8 +570,17 @@ void DoConfig() {
 #endif
 
   while ( LetRunning ) {
-    TitleMenu(F("Live"));
-    OLed.setCursor(4, L3);  OLed.print(F("C ")); OLedprint2( (byte) Channel);
+    TitleMenu(F("Setup"));
+
+    if ( IsInverted(Channel) )  {
+      OLed.fillRect(4, L3, 50, 16, SSD1306_WHITE);  
+      OLed.setTextColor(SSD1306_INVERSE); 
+      OLed.setCursor(4, L3);  OLed.print(F("Ci")); OLedprint2( (byte) Channel);
+      OLed.setTextColor(SSD1306_WHITE);
+    } else {
+      OLed.setCursor(4, L3);  OLed.print(F("C ")); OLedprint2( (byte) Channel);
+    } 
+    
     OLed.setCursor(4, L4);  OLedprint4(us*10);      
     OLed.setCursor(68,L3);  OLedprint4(MinUs[Channel]*10);
     OLed.setCursor(68,L4);  OLedprint4(MaxUs[Channel]*10);
@@ -560,6 +588,12 @@ void DoConfig() {
   
     ReadBtnState();   
     switch ( readkey() ) {
+      case BTN_ENC_Long:   if ( IsInverted(Channel) ) {
+                             Inverted = Inverted & ~( 1 << Channel);
+                           } else {
+                             Inverted = Inverted | ( 1 << Channel);
+                           }     
+              break;
       case BTN_RIGHT:       MaxUs[Channel]=us;
               break;     
       case BTN_RIGHT_Long:  MaxUs[Channel]=MAX_SAFE_US;
@@ -589,7 +623,7 @@ void DoConfig() {
 #else
     ReadChannels();
     AnaVal =Values[Channel];
-    Channel=LastChanelchanged;
+    Channel=LastChannelchanged;
 #endif
 
     us=map(AnaVal, 0, 255, MIN_US,MAX_US);
@@ -606,10 +640,11 @@ void DoConfig() {
 //                    eeprom Recal and Save 
 // =============================================================
 
-#define Adr_Stamp  0
-#define Adr_MinUs  2
-#define Adr_MaxUs 18
-#define Adr_Seque 34
+#define Adr_Stamp    0
+#define Adr_MinUs    2
+#define Adr_MaxUs   18
+#define Adr_Invert  34
+#define Adr_Seque   38
 
 void InitVars() {
   for ( byte i=0; i<16 ; i++ ) {
@@ -622,6 +657,7 @@ void SaveToEprom() {
   EEPROM.put(Adr_Stamp, (int) PROGSTAMP);
   EEPROM.put(Adr_MinUs, MinUs);
   EEPROM.put(Adr_MaxUs, MaxUs); 
+  EEPROM.put(Adr_Seque, Inverted);
 //  Serial.println(F("Save eeprom"));
 }
 
@@ -650,6 +686,7 @@ void InitFromEprom () {
   if ( temp == (int) PROGSTAMP ) {       // Stamp found , we can assume eerom contain Valid Datas 
     EEPROM.get(Adr_MinUs  , MinUs);      // Get Minimal Servo pos
     EEPROM.get(Adr_MaxUs  , MaxUs);      // Get Maximal Servo pos  
+    EEPROM.get(Adr_Seque, Inverted);     // Invertes Status
     EEPROM.get(Adr_Seque  , NbLines);    // Get Nb Sequences actives 
     EEPROM.get(Adr_Seque+1, Sequence);   // Get  Sequences
   
@@ -666,6 +703,8 @@ void InitFromEprom () {
       Serial.print(MaxUs[i]);    
       Serial.print(",");  
     }
+    Serial.println("");
+    Serial.println(Inverted);
     Serial.println("");
 
     Serial.println();
