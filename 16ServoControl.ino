@@ -2,6 +2,7 @@
 //
 // 16 Servos Controler
 //
+// Version 1.02  Copy previous step in reccord mode
 // Version 1.01  add MIN_SAFE_US & MAX_SAFE_US
 // Version 1.00  first complete version
 // (c) 2023 F.LAFFORGUE
@@ -14,6 +15,8 @@
 // -------------------------------------------------------------
 
 // Configuration options
+
+#define PROGSTAMP 3221
 
                            // Range can be reduced in Setup
 #define MIN_US   50        //   500 us  
@@ -316,20 +319,23 @@ void DoLive() {
 #define NbStep    10      // NB steps for fadding ( change Speed ) 
 #define MaxLines  10
 byte Sequence [MaxLines][16] = {
-  { 000,255,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 255,000,255,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,255,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 255,000,255,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 },
-  { 000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000 } };
-byte   NbLines   = MaxLines;
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 },
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 },
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 },
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 },
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 },
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 },
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 },
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 },
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 },
+  { 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128 } };
+byte   NbLines   = 0;
 
 int           Speed = 500;  // millisecond between steps
 unsigned long Lck;
+
+#define UNLOCKALL 0x0000
+#define LOCKALL   0xFFFF
 
 void UnlockChanels(byte line) {
   unsigned long temp;
@@ -355,6 +361,22 @@ void UpdateServosSeq(byte line) {
   }  
 }
 
+void CurlineChangeAndInit(byte l) {
+  boolean empty = true;
+  for (byte i=0; i<16;i++) {
+    if ( Sequence[l][i] != 127 ) { 
+      empty=false;
+    }
+  }
+  if ( empty ) {
+    ReadChannels();
+    Lck=UNLOCKALL;
+    for (byte i=0; i<16;i++) {
+      Sequence[l][i] = Values[i];
+    }    
+  }
+}
+
 void DoRecord() {
   boolean       LetRunning = true;
   unsigned long omillis    = 0;  
@@ -363,7 +385,11 @@ void DoRecord() {
 
   while ( LetRunning ) {
     if ( oLine != CurLine ) {
-      Lck   = 0xFFFF;
+      if ( CurLine >= NbLines) {
+        CurlineChangeAndInit(0);
+      } else {
+        Lck   = LOCKALL;
+      }
       oLine = CurLine;
     }
     ReadChannels();
@@ -580,8 +606,6 @@ void DoConfig() {
 //                    eeprom Recal and Save 
 // =============================================================
 
-const int ProgStamp = 3220;
-
 #define Adr_Stamp  0
 #define Adr_MinUs  2
 #define Adr_MaxUs 18
@@ -595,7 +619,7 @@ void InitVars() {
 }
 
 void SaveToEprom() {
-  EEPROM.put(Adr_Stamp, ProgStamp);
+  EEPROM.put(Adr_Stamp, (int) PROGSTAMP);
   EEPROM.put(Adr_MinUs, MinUs);
   EEPROM.put(Adr_MaxUs, MaxUs); 
 //  Serial.println(F("Save eeprom"));
@@ -623,7 +647,7 @@ void SaveSequence() {
 void InitFromEprom () {
   int temp;
   EEPROM.get(Adr_Stamp, temp);
-  if ( temp == ProgStamp ) {  // Stamp found , we can assume eerom contain Valid Datas 
+  if ( temp == (int) PROGSTAMP ) {       // Stamp found , we can assume eerom contain Valid Datas 
     EEPROM.get(Adr_MinUs  , MinUs);      // Get Minimal Servo pos
     EEPROM.get(Adr_MaxUs  , MaxUs);      // Get Maximal Servo pos  
     EEPROM.get(Adr_Seque  , NbLines);    // Get Nb Sequences actives 
