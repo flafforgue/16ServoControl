@@ -39,7 +39,7 @@ Real time servo updating may be removed by software compilation option.<br>
  Long Press L reset to min to MIN_SAFE_US<br>
  Long Press R reset to max to MAX_SAFE_US<br>
  Long Press to select Save into Eeprom<br>
- Long Press to Rotary Encoder to Invert Channel<br>
+ Long Press to Rotary Encoder to Invert Channel Servo<br>
 <br>
 
 **History**<br>
