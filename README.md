@@ -1,4 +1,4 @@
-# 16ServoControl V 1.01 
+# 16ServoControl V 1.03 
 
  16 Servos Controler using PCA9685 , 74hc4067 mux and SSD1306 Oled display
 
@@ -38,7 +38,8 @@ Real time servo updating may be removed by software compilation option.<br>
  R Button to set max Value<br>
  Long Press L reset to min to MIN_SAFE_US<br>
  Long Press R reset to max to MAX_SAFE_US<br>
- Long press to select Save into Eeprom<br>
+ Long Press to select Save into Eeprom<br>
+ Long Press to Rotary Encoder to Invert Channel<br>
 <br>
 
 **History**<br>
