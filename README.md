@@ -43,6 +43,8 @@ Real time servo updating may be removed by software compilation option.<br>
 <br>
 
 **History**<br>
+V 1.03 add servo inversion & disable CONFIGMOVESERVO
+V 1.02 add Copy previous step in reccord mode & default set to 127
 V 1.01 added MIN_SAFE_US & MAX_SAFE_US for Servos initialisation. by default 600 and 2400 us<br>
 v 1.00 First fully running version.<br>
 
