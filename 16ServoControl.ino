@@ -2,6 +2,7 @@
 //
 // 16 Servos Controler
 //
+// Version 1.03  add 
 // Version 1.03  Add inversion possibility
 //               CONFIGMOVESERVO no more enabled
 // Version 1.02  Copy previous step in reccord mode
@@ -375,7 +376,6 @@ boolean IsLocked ( byte Channel ) {
 
 void UpdateServosSeq(byte line) {
   for(byte i=0;i<16;i++) {
-//    SetServo(i, Seq[i] );
     SetServo(i, Sequence[line][i] );
   }  
 }
@@ -401,6 +401,7 @@ void DoRecord() {
   unsigned long omillis    = 0;  
   char          CurLine    = 0;
   byte          oLine      = 1;
+  int           microsec;
 
   while ( LetRunning ) {
     if ( oLine != CurLine ) {
@@ -431,7 +432,11 @@ void DoRecord() {
     
     if ( millis() - omillis > 150 ) {  // Refresh Display every 150 us
       TitleMenu(F("Reccord"));
-      int microsec = map(Values[LastChannelchanged], 0, 255, MinUs[LastChannelchanged],  MaxUs[LastChannelchanged]);
+      if ( ( Inverted & ( 1 << LastChannelchanged) ) != 0 ) {    
+        microsec = map(Values[LastChannelchanged], 0, 255, MaxUs[LastChannelchanged], MinUs[LastChannelchanged]);
+      } else {
+        microsec = map(Values[LastChannelchanged], 0, 255, MinUs[LastChannelchanged],  MaxUs[LastChannelchanged]);
+      }    
     
       for ( byte j=0; j<16 ; j++ ) {          // Mark Locked Channels
         if ( ( Lck & ( 1 << j) ) != 0 ) {
@@ -448,6 +453,13 @@ void DoRecord() {
       OLed.setCursor(68, L3);  OLedprint4( (byte) CurLine+1);
           
       OLed.setCursor( 4, L4);  OLedprint2(LastChannelchanged);
+      if ( ( Lck & ( 1 << LastChannelchanged) ) != 0 ) {              // Diplay direction to move
+        if ( (int) Values[LastChannelchanged] > (int) Sequence[CurLine][LastChannelchanged]  ) {
+          OLed.print(F("«"));
+        } else {
+          OLed.print(F("»"));
+        }
+      }
       OLed.setCursor(68, L4);  OLedprint4(microsec*10);
       OLed.display();
       omillis = millis();
