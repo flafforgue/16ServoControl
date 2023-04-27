@@ -2,7 +2,7 @@
 //
 // 16 Servos Controler
 //
-// Version 1.03  add 
+// Version 1.04  Diplay direction to move for unlocking in Rec mode 
 // Version 1.03  Add inversion possibility
 //               CONFIGMOVESERVO no more enabled
 // Version 1.02  Copy previous step in reccord mode
@@ -14,12 +14,13 @@
 //
 // 21/04/2023  Flash :  21862  Mem : 713   Reste : 1335
 // 22/04/2023  Flash :  23220  Mem : 785   Reste : 1263
+// 27/04/2023  Flash :  24276  Mem : 790   Reste : 1258
 //
 // -------------------------------------------------------------
 
 // Configuration options
 
-#define PROGSTAMP 3223
+#define PROGSTAMP 3223     // To be increased when saved data structure change 
 
                            // Range can be reduced in Setup
 #define MIN_US   50        //   500 us  
@@ -455,9 +456,9 @@ void DoRecord() {
       OLed.setCursor( 4, L4);  OLedprint2(LastChannelchanged);
       if ( ( Lck & ( 1 << LastChannelchanged) ) != 0 ) {              // Diplay direction to move
         if ( (int) Values[LastChannelchanged] > (int) Sequence[CurLine][LastChannelchanged]  ) {
-          OLed.print(F("«"));
+          OLed.print(F("<"));
         } else {
-          OLed.print(F("»"));
+          OLed.print(F(">"));
         }
       }
       OLed.setCursor(68, L4);  OLedprint4(microsec*10);
