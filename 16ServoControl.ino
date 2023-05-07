@@ -102,7 +102,7 @@ byte ReadChannel(byte chn){            // Read One Channel
   digitalWrite(S2, pgm_read_byte(&ch2[chn]) );
   digitalWrite(S3, pgm_read_byte(&ch3[chn]) );
   delay(10);
-  byte val = analogRead(SIGNAL) >> 2;
+  byte val = analogRead(SIGNAL) >> 2;  // Analogread 0-1023 , Datas 0-255 so div by 4
   return val;
 }
 
@@ -179,7 +179,7 @@ void ClearEncoder() {
 #define BTN_SELECT        7
 #define BTN_SELECT_Long   8
 
-#define BTN_LONGDELAY  1000
+#define BTN_LONGDELAY   800
 
 byte keydown  = BTN_NONE;
 byte key      = BTN_NONE;
@@ -488,8 +488,6 @@ void DoPlay() {
   
   while ( WaitToStart ) {
     TitleMenu(F("Play"));   
-//    OLed.clearDisplay();
-//    OLed.setTextSize(2);
     OLed.setCursor(4, L2);  OLed.print(F("Press Sel"));
     OLed.setCursor(8, L3);  OLed.print(F("to start"));
     OLed.setCursor(4, L4);  OLed.print(F("speed"));
