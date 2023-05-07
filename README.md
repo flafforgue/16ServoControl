@@ -1,4 +1,4 @@
-# 16ServoControl V 1.03 
+# 16ServoControl V 1.04 
 
  16 Servos Controler using PCA9685 , 74hc4067 mux and SSD1306 Oled display
 
@@ -43,6 +43,7 @@ Real time servo updating may be removed by software compilation option.<br>
 <br>
 
 **History**<br>
+V 1.04 Diplay direction to move for unlocking in Rec mode<br>
 V 1.03 add servo inversion & disable CONFIGMOVESERVO<br>
 V 1.02 add Copy previous step in reccord mode & default set to 127<br>
 V 1.01 added MIN_SAFE_US & MAX_SAFE_US for Servos initialisation. by default 600 and 2400 us<br>
