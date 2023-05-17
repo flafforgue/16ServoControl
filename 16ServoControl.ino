@@ -1,6 +1,7 @@
 // -------------------------------------------------------------
-//
 // 16 Servos Controler
+// -------------------------------------------------------------
+// Arduino Nano 328
 //
 // Version 1.04  Diplay direction to move for unlocking in Rec mode 
 // Version 1.03  Add inversion possibility
@@ -8,14 +9,10 @@
 // Version 1.02  Copy previous step in reccord mode
 // Version 1.01  add MIN_SAFE_US & MAX_SAFE_US
 // Version 1.00  first complete version
-// (c) 2023 F.LAFFORGUE
 //
 // Need about 1200 byte free space to run
 //
-// 21/04/2023  Flash :  21862  Mem : 713   Reste : 1335
-// 22/04/2023  Flash :  23220  Mem : 785   Reste : 1263
-// 27/04/2023  Flash :  24276  Mem : 790   Reste : 1258
-//
+// (c) 2023 F.LAFFORGUE
 // -------------------------------------------------------------
 
 // Configuration options
